@@ -38,6 +38,7 @@ bool scan_param(int argc, char** argv, Parametrs &param)
             if(argv[i][1] == '-')
             {
                 bool is_success;
+                c = 2;
                 switch (argv[i][c]) {
                     case 'l':
                     {
@@ -72,9 +73,7 @@ bool scan_param(int argc, char** argv, Parametrs &param)
                     default:
                         return false;
                 }
-                if(is_success)
-                    c = 2;
-                else
+                if(!is_success)
                     return false;
             }
 
@@ -187,10 +186,10 @@ int main(int argc, char** argv)
         }
 
 
-    if(param.freq)
+    if(param.freq > 0)
     {
         if(!save_to_bmp_message(0, param, sand)) return -6;
-        for(unsigned long long i = 1; i < param.max_iter && !sand.step(); i++)
+        for(unsigned long long i = 1; i < param.max_iter + 1 && !sand.step(); i++)
         {
             if(i%param.freq == 0)
                 if(!save_to_bmp_message(i, param, sand)) return -6;
@@ -198,9 +197,9 @@ int main(int argc, char** argv)
     }
     else
     {
-        unsigned long long i = 0;
-        for(; i < param.max_iter && !sand.step(); i++);
-        if(!save_to_bmp_message(0, param, sand)) return -6;
+        unsigned long long i = 1;
+        for(; i < param.max_iter + 1 && !sand.step(); i++); ///step == true - stable
+        if(!save_to_bmp_message(i, param, sand)) return -6;
     }
     return 0;
 }
