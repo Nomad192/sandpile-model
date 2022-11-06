@@ -4,6 +4,56 @@
 #include <cstring>
 #include <cstdio>
 
+
+#define SIZE_PIXEL_BIT (4)      ///4 or 24
+
+
+#if SIZE_PIXEL_BIT == 4
+constexpr unsigned char BMP_Header[] =
+        {0x42, 0x4D,
+         0x00, 0x00, 0x00, 0x00,
+         0x00, 0x00,
+         0x00, 0x00,
+         0x36, 0x00, 0x00, 0x00};
+constexpr unsigned char DIB_Header[] =
+        {0x28, 0x00, 0x00, 0x00,
+         0x02, 0x00, 0x00, 0x00,    /// Width pix
+         0x02, 0x00, 0x00, 0x00,    /// Height pix
+         0x01, 0x00,
+         0x04, 0x00,                ///pix bit size
+         0x00, 0x00, 0x00, 0x00,
+         0x80, 0x46, 0x00, 0x00,
+         0x13, 0x0B, 0x00, 0x00,
+         0x13, 0x0B, 0x00, 0x00,
+         0x00, 0x00, 0x00, 0x00,
+         0x00, 0x00, 0x00, 0x00,
+
+         0x00, 0x00, 0x00, 0x00,
+         0x00, 0x00, 0x80, 0x00,
+         0x00, 0x80, 0x00, 0x00,
+         0x00, 0x80, 0x80, 0x00,
+         0x80, 0x00, 0x00, 0x00,
+         0x80, 0x00, 0x80, 0x00,
+         0x80, 0x80, 0x00, 0x00,
+         0x80, 0x80, 0x80, 0x00,
+         0xC0, 0xC0, 0xC0, 0x00,
+         0x00, 0x00, 0xFF, 0x00,
+         0x00, 0xFF, 0x00, 0x00,
+         0x00, 0xFF, 0xFF, 0x00,
+         0xFF, 0x00, 0x00, 0x00,
+         0xFF, 0x00, 0xFF, 0x00,
+         0xFF, 0xFF, 0x00, 0x00,
+         0xFF, 0xFF, 0xFF, 0x00};
+
+
+enum Color {
+    WHITE = 15,
+    GREEN = 6,
+    VIOLET = 5,
+    YELLOW = 11,
+    BLACK = 0
+};
+#elif SIZE_PIXEL_BIT == 24
 constexpr unsigned char BMP_Header[] =
         {0x42, 0x4D,
          0x00, 0x00, 0x00, 0x00,
@@ -23,9 +73,6 @@ constexpr unsigned char DIB_Header[] =
          0x00, 0x00, 0x00, 0x00,
          0x00, 0x00, 0x00, 0x00};
 
-constexpr unsigned char size_pixel = 3;
-constexpr unsigned char k_row = 4;
-
 enum Color {
     WHITE = 0xFFFFFF,
     GREEN = 0x408000,
@@ -33,14 +80,21 @@ enum Color {
     YELLOW = 0xFFD800,
     BLACK = 0x000000
 };
+#endif
+
+
+constexpr unsigned char size_pixel_bit = SIZE_PIXEL_BIT;
+constexpr unsigned char k_row = 4;
 
 #define MAX(x, y) x > y ? (x) : (y)
 #define MIN(x, y) x < y ? (x) : (y)
 
+
+
 template<typename T_size, typename T_data>
 bool save_array_to_BMP(char *name, T_size height, T_size width, T_data *data)
 {
-    size_t row_size = (size_pixel * width);
+    size_t row_size = (SIZE_PIXEL_BIT * width + 7)/8;
     size_t row_padding_size = (k_row - (row_size % k_row)) % k_row;
     row_size += row_padding_size;
     size_t bitmap_size = row_size * height;
@@ -60,6 +114,7 @@ bool save_array_to_BMP(char *name, T_size height, T_size width, T_data *data)
 
     memcpy(all_bmp + sizeof(BMP_Header) + 4, &width, MIN(sizeof(T_size), 4));
     memcpy(all_bmp + sizeof(BMP_Header) + 8, &height, MIN(sizeof(T_size), 4));
+    memcpy(all_bmp + sizeof(BMP_Header) + 14, &size_pixel_bit, MIN(sizeof(T_size), 1));
 
     for(size_t i = 0; i < height; i++) {
         for (size_t j = 0; j < width; j++) {
@@ -81,9 +136,28 @@ bool save_array_to_BMP(char *name, T_size height, T_size width, T_data *data)
                     color = BLACK;
                     break;
             }
-            memcpy(all_bmp + pos, &color, size_pixel);
-            pos += size_pixel;
+
+            #if SIZE_PIXEL_BIT == 4
+                if(j%2== 0)
+                {
+                    all_bmp[pos] = color << 4;
+                }
+                else
+                {
+                    all_bmp[pos] += color;
+                    pos++;
+                }
+            #elif SIZE_PIXEL_BIT == 24
+                memcpy(all_bmp + pos, &color, 3);
+                pos += 3;
+            #endif
+
         }
+        #if SIZE_PIXEL_BIT == 4
+            if(width%2 == 1)
+                pos++;
+        #endif
+
         if(row_padding_size) {
             uint_fast32_t padding = 0;
             memcpy(all_bmp + pos, &padding, row_padding_size);
