@@ -1,5 +1,3 @@
-# Лабораторная работа 3
-
 ## Задача 
 
 Релазовать упрощенную [Модель песчаной кучи](https://en.wikipedia.org/wiki/Abelian_sandpile_model), позволяющую сохранять свои состояния в картинку в [формате BMP](https://en.wikipedia.org/wiki/BMP_file_format). 
